@@ -11,6 +11,8 @@ from termcolor import cprint, colored
 import signals
 from configs import *
 
+pd.set_option('display.max_rows', 10)
+pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
 pd.set_option("display.unicode.ambiguous_as_wide", True)
 pd.set_option("display.unicode.east_asian_width", True)
 

@@ -10,6 +10,11 @@ import exchangeConfig
 from configs import *
 from functions import *
 
+pd.set_option('display.max_rows', 10)
+pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
+pd.set_option("display.unicode.ambiguous_as_wide", True)
+pd.set_option("display.unicode.east_asian_width", True)
+
 
 def singalCall(symbolConfig, exId, markets):
     exCfg = getattr(exchangeConfig, exId+"_CONFIG")
