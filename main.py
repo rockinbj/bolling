@@ -73,7 +73,7 @@ def main():
     mks = ex.loadMarkets()
 
     multiCall = partial(singalCall, exId=exId, markets=mks)
-    pool = Pool(min(len(SYMBOLS_CONFIG), cpu_count()))
+    pool = Pool(len(SYMBOLS_CONFIG))
     pool.map(multiCall, SYMBOLS_CONFIG)
 
 
