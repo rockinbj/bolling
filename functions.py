@@ -41,13 +41,18 @@ def sendAndRaise(msg):
     raise RuntimeError(msg)
 
 
-def sendReport(msg, interval=1):
-    nowMinute = dt.datetime.minute
+def sendReport(symbolInfo, interval=REPORT_INTERVAL):
+    nowMinute = dt.datetime.now().minute
     if nowMinute % interval == 0:
-        sendMixin(msg)
+        symbolInfo = symbolInfo.to_dict(orient="index")
+        msg = ""
+        for symbol in symbolInfo.keys():
+            msg += f"{symbol}:\n"
+            for k,v in symbolInfo[symbol].items():
+                msg += f"    {k}: {v}\n"
+
+        sendMixin(f"{'=='*3}持仓报告{'=='*3}\n{msg}")
     
-
-
 
 def retryCallback(retry_state):
     name = getattr(retry_state.fn, '__name__')
@@ -202,9 +207,9 @@ def getSymbolInfo(exchange, symbol, symbolMarket):
     symbolId = symbolMarket["id"]
     account = getAccount(exchange)
     symbolInfo = pd.DataFrame()    
-    symbolInfo.loc[symbol, "账户权益"] = round(float(account["totalWalletBalance"]), 2)
-    symbolInfo.loc[symbol, "账户收益"] = round(float(account["totalUnrealizedProfit"]), 2)
-    symbolInfo.loc[symbol, "账户余额"] = round(float(account["availableBalance"]), 2)
+    symbolInfo.loc[symbol, "账户权益"] = round(float(account["totalWalletBalance"]), 4)
+    symbolInfo.loc[symbol, "账户收益"] = round(float(account["totalUnrealizedProfit"]), 4)
+    symbolInfo.loc[symbol, "账户余额"] = round(float(account["availableBalance"]), 4)
     symbolInfo[["账户权益", "账户收益", "账户余额"]] = symbolInfo[["账户权益", "账户收益", "账户余额"]].astype("float64")
     symbolInfo.loc[symbol, "交易对"] = symbolId
     symbolInfo.loc[symbol, "持仓方向"] = 0
@@ -233,13 +238,13 @@ def getSymbolInfo(exchange, symbol, symbolMarket):
         position2.set_index(["symbol"], inplace=True)
         position2.index.name = None
 
-        symbolInfo.loc[symbol, "持仓收益"] = round(float(position2.at[symbolId, "unRealizedProfit"]), 2)
+        symbolInfo.loc[symbol, "持仓收益"] = round(float(position2.at[symbolId, "unRealizedProfit"]), 4)
         roe = float(position1.at[symbolId, "unrealizedProfit"]) / float(position1.at[symbolId, "initialMargin"])
         roe = round(roe, 4)
         roe = f"{roe*100}%"
         symbolInfo.loc[symbol, "持仓收益率"] = roe
         symbolInfo.loc[symbol, "持仓数量"] = position2.at[symbolId, "positionAmt"]
-        symbolInfo.loc[symbol, "持仓价值"] = round(abs(float(position2.at[symbolId, "notional"])), 2)
+        symbolInfo.loc[symbol, "持仓价值"] = round(abs(float(position2.at[symbolId, "notional"])), 4)
         symbolInfo.loc[symbol, "持仓均价"] = position2.at[symbolId, "entryPrice"]
         symbolInfo.loc[symbol, "当前价格"] = round(float(position2.at[symbolId, "markPrice"]), precisionPrice)
         symbolInfo.loc[symbol, "爆仓价格"] = round(float(position2.at[symbolId, "liquidationPrice"]), precisionPrice)
@@ -252,9 +257,9 @@ def getSymbolInfo(exchange, symbol, symbolMarket):
 
 def getSignal(symbolInfo, signalName, klines, paras):
     symbol = symbolInfo.index[0]
-    now = int(symbolInfo.at[symbol, "持仓方向"])
-    new = int(getattr(signals, signalName)(klines, paras))
-    # print(f"now: {now}, new:{new}")
+    now = symbolInfo.at[symbol, "持仓方向"]
+    new = getattr(signals, signalName)(klines, paras)
+    print(f"now: {now}, new:{new}")
     if now==0 and new==1:
         signal = [1]
     elif now==0 and new==-1:

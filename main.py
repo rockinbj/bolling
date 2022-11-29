@@ -26,7 +26,7 @@ def singalCall(symbolConfig, exId, markets):
         amount = 10
       
     klinesHistory = getKlines(exchange, symbol, level, amount)
-    print(f"{symbol} 获取历史k线 {len(klinesHistory)} 根")
+    print(f"{symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
 
     while True:
         symbolInfo = getSymbolInfo(exchange, symbol, market)
@@ -41,7 +41,7 @@ def singalCall(symbolConfig, exId, markets):
         cprint(f"{symbol} Here we go!\n", "blue")
 
         klinesNew = getKlines(exchange, symbol, level, NEW_KLINE_NUM)
-        print(f"{symbol} 获取最新k线 {len(klinesNew)} 根")
+        print(f"{symbol} 获取 {level} 最新k线 {len(klinesNew)} 根")
         
         klines = pd.concat([klinesHistory.sort_values("openTimeGmt8"),
                             klinesNew.sort_values("openTimeGmt8")],
@@ -53,9 +53,9 @@ def singalCall(symbolConfig, exId, markets):
         signal = symbolInfo.at[symbol, "信号动作"]
         cprint(f"{symbol} 交易信号: {signal}", "green")
         if signal is not np.nan:
-            orderStatus = placeOrder(exchange, symbolInfo, symbolConfig, market)
-            if orderStatus:
-                sendAndPrint(f"{symbol} 下单成功:\n{orderStatus}")
+            orderList = placeOrder(exchange, symbolInfo, symbolConfig, market)
+            if orderList:
+                sendAndPrint(f"{symbol} 订单成交:\n{orderList}")
                 symbolInfo = getSymbolInfo(exchange, symbol, market)
                 print(f"{symbol} 更新成交后的状态:\n{symbolInfo}")
     
