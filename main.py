@@ -24,7 +24,8 @@ def singalCall(symbolConfig, exId, markets):
         amount = para[0] + 10
     else:
         amount = 10
-      
+    
+    print(f"{symbol} ready...")
     klinesHistory = getKlines(exchange, symbol, level, amount)
     print(f"{symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
 
