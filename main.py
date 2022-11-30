@@ -86,7 +86,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except RuntimeError:
-        exit()
-    except ccxt.RequestTimeout:
-        print("timeout")
+
+    except Exception as e:
+        cprint(e, "red")
