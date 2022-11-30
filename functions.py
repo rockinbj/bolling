@@ -1,6 +1,5 @@
 import datetime as dt
 import time
-import traceback
 
 import ccxt
 import pandas as pd
@@ -10,6 +9,7 @@ from termcolor import cprint, colored
 
 import signals
 from paraConfig import *
+from symbolConfig import *
 
 pd.set_option('display.max_rows', 10)
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
@@ -27,9 +27,9 @@ def sendMixin(msg, _type="PLAIN_TEXT"):
         'data': msg,
         }
     
-    r = requests.post(url, data=value, timeout=1).json()
+    r = requests.post(url, data=value, timeout=2).json()
     if r["success"] is False:
-        print(r.text)
+        print(f"Mixin failure: {r.text}")
 
 
 def sendAndPrint(msg):
@@ -43,17 +43,26 @@ def sendAndRaise(msg):
     raise RuntimeError(msg)
 
 
-def sendReport(symbolInfo, interval=REPORT_INTERVAL):
+def sendReport(exchange, symbolMarkets, interval=REPORT_INTERVAL):
+    symbolInfoList = pd.DataFrame()
     nowMinute = dt.datetime.now().minute
-    if nowMinute % interval == 0:
-        symbolInfo = symbolInfo.to_dict(orient="index")
+    nowSecond = dt.datetime.now().second
+    if (nowMinute%interval==0) and (nowSecond==47):
+        for symbolConfig in SYMBOLS_CONFIG:
+            symbol = symbolConfig["symbol"]
+            mkt = symbolMarkets[symbol]
+            symbolInfo = getSymbolInfo(exchange, symbol, mkt)
+            symbolInfoList = pd.concat([symbolInfoList, symbolInfo])
+        
+        symbolInfoList.fillna("-", inplace=True)
+        siDict = symbolInfoList.to_dict(orient="index")
         msg = ""
-        for symbol in symbolInfo.keys():
+        for symbol in siDict.keys():
             msg += f"{symbol}:\n"
-            for k,v in symbolInfo[symbol].items():
+            for k,v in siDict[symbol].items():
                 msg += f"    {k}: {v}\n"
 
-        sendMixin(f"{'=='*3}持仓报告{'=='*3}\n{msg}")
+        sendMixin(f"{'=='*3}持仓报告{'=='*3}\n\n{msg}")
     
 
 def retryCallback(retry_state):
@@ -260,7 +269,7 @@ def getSignal(symbolInfo, signalName, klines, paras):
     symbol = symbolInfo.index[0]
     now = symbolInfo.at[symbol, "持仓方向"]
     new = getattr(signals, signalName)(klines, paras)
-    print(f"now: {now}, new:{new}")
+    # print(f"{symbol} signal: now: {now}, new:{new}")
     if now==0 and new==1:
         signal = [1]
     elif now==0 and new==-1:

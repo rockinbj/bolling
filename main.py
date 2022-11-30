@@ -1,5 +1,6 @@
+import datetime as dt
 from functools import partial
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 
 import ccxt
 import pandas as pd
@@ -18,6 +19,7 @@ pd.set_option("display.unicode.east_asian_width", True)
 
 
 def singalCall(symbolConfig, exId, markets):
+
     exCfg = getattr(exchangeConfig, exId+"_CONFIG")
     exchange = getattr(ccxt, exId.lower())(exCfg)
 
@@ -36,6 +38,7 @@ def singalCall(symbolConfig, exId, markets):
     print(f"{symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
 
     while True:
+
         symbolInfo = getSymbolInfo(exchange, symbol, market)
         print(f"{symbol} 当前状态:\n{symbolInfo}")
 
@@ -79,9 +82,14 @@ def main():
     mks = ex.loadMarkets()
 
     multiCall = partial(singalCall, exId=exId, markets=mks)
-    pool = Pool(len(SYMBOLS_CONFIG))
-    pool.map(multiCall, SYMBOLS_CONFIG)
-
+    # pool = Pool(len(SYMBOLS_CONFIG))
+    with Pool(len(SYMBOLS_CONFIG)) as pool:
+        r = pool.map_async(multiCall, SYMBOLS_CONFIG)
+        
+        while True:
+            sendReport(ex, mks, REPORT_INTERVAL)
+            time.sleep(1)
+                
 
 if __name__ == "__main__":
     try:
