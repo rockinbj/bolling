@@ -6,9 +6,10 @@ import pandas as pd
 import numpy as np
 from termcolor import cprint
 
-import exchangeConfig
-from configs import *
 from functions import *
+from paraConfig import *
+from symbolConfig import *
+import exchangeConfig
 
 pd.set_option('display.max_rows', 10)
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行

@@ -9,7 +9,7 @@ from tenacity import *
 from termcolor import cprint, colored
 
 import signals
-from configs import *
+from paraConfig import *
 
 pd.set_option('display.max_rows', 10)
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
@@ -412,7 +412,7 @@ def placeOrder(exchange, symbolInfo, symbolConfig, symbolMarket):
 
 
 if __name__ == "__main__":
-    from configs import *
+    from paraConfig import *
     ex = ccxt.binance(
         {
             "options": {
