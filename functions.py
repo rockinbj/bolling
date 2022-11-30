@@ -242,8 +242,7 @@ def getSymbolInfo(exchange, symbol, symbolMarket):
 
         symbolInfo.loc[symbol, "持仓收益"] = round(float(position2.at[symbolId, "unRealizedProfit"]), 4)
         roe = float(position1.at[symbolId, "unrealizedProfit"]) / float(position1.at[symbolId, "initialMargin"])
-        roe = round(roe, 4)
-        roe = f"{roe*100}%"
+        roe = f"{round(roe*100,2)}%"
         symbolInfo.loc[symbol, "持仓收益率"] = roe
         symbolInfo.loc[symbol, "持仓数量"] = position2.at[symbolId, "positionAmt"]
         symbolInfo.loc[symbol, "持仓价值"] = round(abs(float(position2.at[symbolId, "notional"])), 4)
