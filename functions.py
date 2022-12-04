@@ -404,12 +404,12 @@ def placeOrder(exchange, symbolInfo, symbolConfig, symbolMarket):
         orderInfo = exchange.fapiPrivatePostOrder(p)
         orderId = orderInfo["orderId"]
         time.sleep(SLEEP_SHORT)
-        orderStatue = exchange.fapiPrivate_get_order({
-            "symbol": symbolId,
-            "orderId": orderId,
-        })
                 
         for i in range(MAX_TRY):
+            orderStatue = exchange.fapiPrivateGetOrder({
+                "symbol": symbolId,
+                "orderId": orderId,
+            })
             if orderStatue["status"] == "FILLED":
                 orderList.append(orderStatue)
                 break
