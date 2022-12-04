@@ -33,25 +33,25 @@ def singalCall(symbolConfig, exId, markets):
     else:
         amount = 10
     
-    print(f"{symbol} ready...")
+    print(f"{dt.datetime.now()} {symbol} ready...")
     klinesHistory = getKlines(exchange, symbol, level, amount)
-    print(f"{symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
+    print(f"{dt.datetime.now()} {symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
 
     while True:
 
         symbolInfo = getSymbolInfo(exchange, symbol, market)
-        print(f"{symbol} 当前状态:\n{symbolInfo}")
+        print(f"{dt.datetime.now()} {symbol} 当前状态:\n{symbolInfo}")
 
         nextTime = nextStartTime(level, ahead_seconds=AHEAD_SEC)
-        print(f"{symbol} 等待当前k线收盘，新k线开始时间 {nextTime}")
+        print(f"{dt.datetime.now()} {symbol} 等待当前k线收盘，新k线开始时间 {nextTime}")
         time.sleep(max(0, (nextTime - dt.datetime.now()).seconds))
         while True:  # 在靠近目标时间时
             if dt.datetime.now() > nextTime:
                 break
-        cprint(f"{symbol} Here we go!\n", "blue")
+        cprint(f"{dt.datetime.now()} {symbol} Here we go!\n", "blue")
 
         klinesNew = getKlines(exchange, symbol, level, NEW_KLINE_NUM)
-        print(f"{symbol} 获取 {level} 最新k线 {len(klinesNew)} 根")
+        print(f"{dt.datetime.now()} {symbol} 获取 {level} 最新k线 {len(klinesNew)} 根")
         
         klines = pd.concat([klinesHistory.sort_values("openTimeGmt8"),
                             klinesNew.sort_values("openTimeGmt8")],
@@ -61,13 +61,13 @@ def singalCall(symbolConfig, exId, markets):
 
         symbolInfo = getSignal(symbolInfo, strategy, klines, para)
         signal = symbolInfo.at[symbol, "信号动作"]
-        cprint(f"{symbol} 交易信号: {signal}", "green")
+        cprint(f"{dt.datetime.now()} {symbol} 交易信号: {signal}", "green")
         if signal is not np.nan:
             orderList = placeOrder(exchange, symbolInfo, symbolConfig, market)
             if orderList:
                 sendAndPrint(f"{symbol} 订单成交:\n{orderList}")
                 symbolInfo = getSymbolInfo(exchange, symbol, market)
-                print(f"{symbol} 更新成交后的状态:\n{symbolInfo}")
+                print(f"{dt.datetime.now()} {symbol} 更新成交后的状态:\n{symbolInfo}")
     
         print(f"{'==='*5}{symbol} 本轮结束{'==='*5}\n\n")
         sendReport(symbolInfo)
