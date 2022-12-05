@@ -71,7 +71,6 @@ def singalCall(symbolConfig, exId, markets):
     
         print(f"{'==='*5}{symbol} 本轮结束{'==='*5}\n\n")
         time.sleep(SLEEP_LONG)
-        print("end sleepLong")
 
 
 def main():
