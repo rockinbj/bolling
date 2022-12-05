@@ -57,6 +57,7 @@ def singalCall(symbolConfig, exId, markets):
                             klinesNew.sort_values("openTimeGmt8")],
                             ignore_index=True)
         klines.drop_duplicates(subset=["openTimeGmt8"], keep="last", inplace=True)
+        klinesHistory = klines[-amount:]
 
 
         symbolInfo = getSignal(symbolInfo, strategy, klines, para)
