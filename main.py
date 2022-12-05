@@ -70,8 +70,8 @@ def singalCall(symbolConfig, exId, markets):
                 print(f"{dt.datetime.now()} {symbol} 更新成交后的状态:\n{symbolInfo}")
     
         print(f"{'==='*5}{symbol} 本轮结束{'==='*5}\n\n")
-        sendReport(symbolInfo)
         time.sleep(SLEEP_LONG)
+        print("end sleepLong")
 
 
 def main():
