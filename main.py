@@ -97,8 +97,10 @@ def main():
                 
 
 if __name__ == "__main__":
-    try:
-        main()
+    while True:
+        try:
+            main()
 
-    except Exception as e:
-        logger.exception(e)
+        except Exception as e:
+            sendAndPrintError(e)
+            logger.exception(e)
