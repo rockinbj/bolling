@@ -20,3 +20,8 @@ MIXIN_TOKEN = "mrbXSz6rSoQjtrVnDlOH9ogK8UubLdNKClUgx1kGjGoq39usdEzbHlwtFIvHHO3C"
 # 报告发送间隔分钟
 REPORT_INTERVAL = 30
 
+# 设置日志
+import logging
+LOG_FILE_LEVEL = logging.DEBUG
+LOG_CONSOLE_LEVEL = logging.DEBUG
+

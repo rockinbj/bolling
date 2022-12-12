@@ -13,7 +13,7 @@ from paraConfig import *
 from symbolConfig import *
 from logSet import *
 
-pd.set_option('display.max_rows', 10)
+pd.set_option('display.max_rows', 200)
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
 pd.set_option("display.unicode.ambiguous_as_wide", True)
 pd.set_option("display.unicode.east_asian_width", True)
@@ -275,7 +275,7 @@ def getSignal(symbolInfo, signalName, klines, paras):
     symbol = symbolInfo.index[0]
     now = symbolInfo.at[symbol, "持仓方向"]
     new = getattr(signals, signalName)(klines, paras)
-    # print(f"{symbol} signal: now: {now}, new:{new}")
+    logger.debug(f"{symbol} signal: now: {now}, new:{new}")
     if now==0 and new==1:
         signal = [1]
     elif now==0 and new==-1:
@@ -354,7 +354,8 @@ def getOrderSize(symbolInfo, symbolConfig, symbolMarket):
         weight = symbolConfig["weight"]
         leverage = symbolConfig["leverage"]
 
-        size = max(balance * leverage * weight / price, 5/price)
+        # 最小下单金额为5u
+        size = max(balance * leverage * weight / price, 5*leverage/price)
         precision = symbolInfo.at[symbol, "数量精度"]
         size = int(size * (10**precision)) / (10**precision)
         # print(f"symbol:{symbol}, volatility:{volatility}, price:{price}, pre:{precision}, size:{size}, min:{round(0.1**precision, precision)}, minNtl:{minNotional}, minSize:{minSize}")

@@ -32,12 +32,12 @@ def singalCall(symbolConfig, exId, markets):
     level = symbolConfig["level"]
     strategy = symbolConfig["strategy"]
     para = symbolConfig["para"]
-    if strategy=="real_signal_simple_bolling":
+    if "bolling" in strategy.lower():
         amount = para[0] + 10
     else:
         amount = 10
     
-    logger.info(f"{symbol} reading...")
+    logger.info(f"{symbol} ready.")
     klinesHistory = getKlines(exchange, symbol, level, amount)
     logger.info(f"{symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
 
@@ -62,9 +62,10 @@ def singalCall(symbolConfig, exId, markets):
                             ignore_index=True)
         klines.drop_duplicates(subset=["openTimeGmt8"], keep="last", inplace=True)
         klinesHistory = klines[-amount:]
-
+        logger.debug(f"len of klines {len(klines)}, len of klineHis {len(klinesHistory)}")
 
         symbolInfo = getSignal(symbolInfo, strategy, klines, para)
+        logger.debug(f"finish getSignal(): \n{symbolInfo}")
         signal = symbolInfo.at[symbol, "信号动作"]
         logger.info(f"{symbol} 交易信号: {signal}")
         if signal is not np.nan:
