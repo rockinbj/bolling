@@ -65,7 +65,7 @@ SYMBOLS_CONFIG = [
         # "strategy": "real_signal_simple_bolling",
         "strategy": "real_signal_BollingDelay",
         "level": "1h",
-        "para": [710, 1.6, 18],
+        "para": [300, 1.7, 3],
         "slippage": 0.02,
         "volatility": 0.98,
     },
