@@ -70,7 +70,7 @@ def singalCall(symbolConfig, exId, markets):
         if signal is not np.nan:
             orderList = placeOrder(exchange, symbolInfo, symbolConfig, market)
             if orderList:
-                sendAndPrint(f"{symbol} 订单成交:\n{orderList}")
+                sendAndPrintInfo(f"{symbol} 订单成交:\n{orderList}")
                 symbolInfo = getSymbolInfo(exchange, symbol, market)
                 logger.info(f"{symbol} 更新成交后的状态:\n{symbolInfo}")
     

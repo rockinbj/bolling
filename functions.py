@@ -36,13 +36,18 @@ def sendMixin(msg, _type="PLAIN_TEXT"):
         logger.warning(f"Mixin failure: {r.text}")
 
 
-def sendAndPrint(msg):
+def sendAndPrintInfo(msg):
+    logger.info(msg)
+    sendMixin(msg)
+
+
+def sendAndPrintError(msg):
     logger.error(msg)
     sendMixin(msg)
 
 
 def sendAndRaise(msg):
-    logger.critical(msg)
+    logger.error(msg)
     sendMixin(msg)
     raise RuntimeError(msg)
 
@@ -76,7 +81,7 @@ def retryCallback(retry_state):
     errorStr = retry_state.outcome
     msg = f"失败退出:\n{name}()重试{retryTimes}次无效，币种线程退出。请检查。\n传入参数：{paras}\n报错信息：\n{errorStr}"
     msg = colored(msg, "red")
-    sendAndPrint(msg)
+    sendAndPrintError(msg)
     logger.exception(msg)
     retry_state.outcome.result()
 
@@ -349,7 +354,7 @@ def getOrderSize(symbolInfo, symbolConfig, symbolMarket):
         weight = symbolConfig["weight"]
         leverage = symbolConfig["leverage"]
 
-        size = balance * leverage * weight / price
+        size = max(balance * leverage * weight / price, 5/price)
         precision = symbolInfo.at[symbol, "数量精度"]
         size = int(size * (10**precision)) / (10**precision)
         # print(f"symbol:{symbol}, volatility:{volatility}, price:{price}, pre:{precision}, size:{size}, min:{round(0.1**precision, precision)}, minNtl:{minNotional}, minSize:{minSize}")
