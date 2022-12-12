@@ -1,5 +1,6 @@
 import datetime as dt
 import time
+from traceback import format_exc
 
 import ccxt
 import pandas as pd
@@ -10,15 +11,18 @@ from termcolor import cprint, colored
 import signals
 from paraConfig import *
 from symbolConfig import *
+from logSet import *
 
 pd.set_option('display.max_rows', 10)
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
 pd.set_option("display.unicode.ambiguous_as_wide", True)
 pd.set_option("display.unicode.east_asian_width", True)
 
+logger = logging.getLogger("app.func")
 
-@retry(stop=stop_after_attempt(2), wait=wait_fixed(SLEEP_SHORT),
-        retry_error_callback=lambda retry_state: print("sendMixin() Failed."))
+
+@retry(stop=stop_after_attempt(2), wait=wait_fixed(SLEEP_SHORT), reraise=True,
+        retry_error_callback=lambda retry_state: logger.exception("sendMixin() Failed."))
 def sendMixin(msg, _type="PLAIN_TEXT"):
     token = MIXIN_TOKEN
     url = f"https://webhook.exinwork.com/api/send?access_token={token}"
@@ -29,16 +33,16 @@ def sendMixin(msg, _type="PLAIN_TEXT"):
     
     r = requests.post(url, data=value, timeout=2).json()
     if r["success"] is False:
-        print(f"Mixin failure: {r.text}")
+        logger.warning(f"Mixin failure: {r.text}")
 
 
 def sendAndPrint(msg):
-    print(msg)
+    logger.error(msg)
     sendMixin(msg)
 
 
 def sendAndRaise(msg):
-    print(msg)
+    logger.critical(msg)
     sendMixin(msg)
     raise RuntimeError(msg)
 
@@ -70,9 +74,10 @@ def retryCallback(retry_state):
     retryTimes = retry_state.attempt_number
     paras = retry_state.args
     errorStr = retry_state.outcome
-    msg = f"失败退出:\n{name}()重试{retryTimes}次无效，本币种退出。请检查。\n传入参数：{paras}\n报错信息：\n{errorStr}"
+    msg = f"失败退出:\n{name}()重试{retryTimes}次无效，币种线程退出。请检查。\n传入参数：{paras}\n报错信息：\n{errorStr}"
     msg = colored(msg, "red")
     sendAndPrint(msg)
+    logger.exception(msg)
     retry_state.outcome.result()
 
 
@@ -95,8 +100,7 @@ def nextStartTime(level, ahead_seconds=3):
     elif level.endswith('H'):
         level = level.replace('H', 'h')
     else:
-        print('level格式不符合规范。程序exit')
-        raise RuntimeError("nextStartTime: level格式不符合规范")
+        sendAndRaise("level格式错误。程序退出。")
 
     ti = pd.to_timedelta(level)
     now_time = dt.datetime.now()
@@ -188,8 +192,6 @@ def getMinNotional(exchange, symbolMarket):
     symbolId = symbolMarket["id"]
 
 
-
-
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
         retry_error_callback=retryCallback)
 def hasPosition(exchange, symbolMarket):
@@ -229,7 +231,6 @@ def getSymbolInfo(exchange, symbol, symbolMarket):
     symbolInfo["信号动作"] = symbolInfo["信号动作"].astype("object")
     symbolInfo.at[symbol, "信号动作"] = []
     
-
     precisionPrice, precisionAmount = getPrecision(symbolMarket)
     symbolInfo.loc[symbol, "价格精度"] = precisionPrice
     symbolInfo.loc[symbol, "数量精度"] = precisionAmount
@@ -368,9 +369,9 @@ def getOrderStatus(exchange, symbolId, orderId):
     })["status"]
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry=retry_if_not_exception_type(RuntimeError),
-        retry_error_callback=retryCallback)
+# @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
+#         retry=retry_if_not_exception_type(RuntimeError),
+#         retry_error_callback=retryCallback)                  
 def placeOrder(exchange, symbolInfo, symbolConfig, symbolMarket):
     symbol = symbolInfo.index[0]
     symbolId = symbolInfo.at[symbol, "交易对"]
@@ -399,10 +400,15 @@ def placeOrder(exchange, symbolInfo, symbolConfig, symbolMarket):
             "workingType": "MARK_PRICE",
             "timeInForce": "GTC",  # 必须参数"有效方式":GTC - Good Till Cancel 成交为止
         }
-        print(f"本次下单参数: {p}")
+        logger.debug(f"本次下单参数: {p}")
 
-        orderInfo = exchange.fapiPrivatePostOrder(p)
-        orderId = orderInfo["orderId"]
+        try:
+            orderInfo = exchange.fapiPrivatePostOrder(p)
+            orderId = orderInfo["orderId"]
+        except Exception as e:
+            logger.exception(e)
+            sendAndRaise(f"报错订单信息：{p}\n报错信息：{format_exc()}")
+
         time.sleep(SLEEP_SHORT)
                 
         for i in range(MAX_TRY):

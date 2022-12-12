@@ -1,21 +1,24 @@
 import datetime as dt
 from functools import partial
-from multiprocessing import Pool
+from multiprocessing import Pool, current_process
 
 import ccxt
-import pandas as pd
 import numpy as np
+import pandas as pd
 from termcolor import cprint
 
+import exchangeConfig
 from functions import *
+from logSet import *
 from paraConfig import *
 from symbolConfig import *
-import exchangeConfig
 
 pd.set_option('display.max_rows', 10)
 pd.set_option('expand_frame_repr', False)  # 当列太多时不换行
 pd.set_option("display.unicode.ambiguous_as_wide", True)
 pd.set_option("display.unicode.east_asian_width", True)
+
+logger = logging.getLogger("app.main")
 
 
 def singalCall(symbolConfig, exId, markets):
@@ -24,6 +27,7 @@ def singalCall(symbolConfig, exId, markets):
     exchange = getattr(ccxt, exId.lower())(exCfg)
 
     symbol = symbolConfig["symbol"]
+    current_process().name = symbol  # 修改线程名称，日志中用来区分
     market = markets[symbol]
     level = symbolConfig["level"]
     strategy = symbolConfig["strategy"]
@@ -33,25 +37,25 @@ def singalCall(symbolConfig, exId, markets):
     else:
         amount = 10
     
-    print(f"{dt.datetime.now()} {symbol} ready...")
+    logger.info(f"{symbol} reading...")
     klinesHistory = getKlines(exchange, symbol, level, amount)
-    print(f"{dt.datetime.now()} {symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
+    logger.info(f"{symbol} 获取 {level} 历史k线 {len(klinesHistory)} 根")
 
     while True:
 
         symbolInfo = getSymbolInfo(exchange, symbol, market)
-        print(f"{dt.datetime.now()} {symbol} 当前状态:\n{symbolInfo}")
+        logger.info(f"{symbol} 当前状态:\n{symbolInfo}")
 
         nextTime = nextStartTime(level, ahead_seconds=AHEAD_SEC)
-        print(f"{dt.datetime.now()} {symbol} 等待当前k线收盘，新k线开始时间 {nextTime}")
+        logger.info(f"{symbol} 等待当前k线收盘，新k线开始时间 {nextTime}")
         time.sleep(max(0, (nextTime - dt.datetime.now()).seconds))
         while True:  # 在靠近目标时间时
             if dt.datetime.now() > nextTime:
                 break
-        cprint(f"{dt.datetime.now()} {symbol} Here we go!\n", "blue")
+        logger.info(f"{symbol} Here we go!")
 
         klinesNew = getKlines(exchange, symbol, level, NEW_KLINE_NUM)
-        print(f"{dt.datetime.now()} {symbol} 获取 {level} 最新k线 {len(klinesNew)} 根")
+        logger.info(f"{symbol} 获取 {level} 最新k线 {len(klinesNew)} 根")
         
         klines = pd.concat([klinesHistory.sort_values("openTimeGmt8"),
                             klinesNew.sort_values("openTimeGmt8")],
@@ -62,15 +66,15 @@ def singalCall(symbolConfig, exId, markets):
 
         symbolInfo = getSignal(symbolInfo, strategy, klines, para)
         signal = symbolInfo.at[symbol, "信号动作"]
-        cprint(f"{dt.datetime.now()} {symbol} 交易信号: {signal}", "green")
+        logger.info(f"{symbol} 交易信号: {signal}")
         if signal is not np.nan:
             orderList = placeOrder(exchange, symbolInfo, symbolConfig, market)
             if orderList:
                 sendAndPrint(f"{symbol} 订单成交:\n{orderList}")
                 symbolInfo = getSymbolInfo(exchange, symbol, market)
-                print(f"{dt.datetime.now()} {symbol} 更新成交后的状态:\n{symbolInfo}")
+                logger.info(f"{symbol} 更新成交后的状态:\n{symbolInfo}")
     
-        print(f"{'==='*5}{symbol} 本轮结束{'==='*5}\n\n")
+        logger.info(f"{'==='*5}{symbol} 本轮结束{'==='*5}")
         time.sleep(SLEEP_LONG)
 
 
@@ -96,4 +100,4 @@ if __name__ == "__main__":
         main()
 
     except Exception as e:
-        cprint(e, "red")
+        logger.exception(e)
