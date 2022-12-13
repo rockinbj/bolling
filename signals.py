@@ -153,7 +153,7 @@ def real_signal_BollingDelay(df, para):
     cond2 = df["signal2"] == -1
     df.loc[(cond1 | cond2)&(df["dif"]<=percent), "signal"] = df["signal2"]
 
-    # df['signal'].fillna(method='ffill', inplace=True)
+    df['signal'].fillna(method='ffill', inplace=True)
     # df['signal'].fillna(value=0, inplace=True)
 
     logger.debug(f"signal:\n{df}")
