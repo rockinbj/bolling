@@ -375,9 +375,8 @@ def getOrderStatus(exchange, symbolId, orderId):
     })["status"]
 
 
-# @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-#         retry=retry_if_not_exception_type(RuntimeError),
-#         retry_error_callback=retryCallback)                  
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
+        retry_error_callback=retryCallback)                  
 def placeOrder(exchange, symbolInfo, symbolConfig, symbolMarket):
     symbol = symbolInfo.index[0]
     symbolId = symbolInfo.at[symbol, "交易对"]
