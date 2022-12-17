@@ -23,5 +23,5 @@ REPORT_INTERVAL = 30
 # 设置日志
 import logging
 LOG_FILE_LEVEL = logging.DEBUG
-LOG_CONSOLE_LEVEL = logging.INFO
+LOG_CONSOLE_LEVEL = logging.DEBUG
 
