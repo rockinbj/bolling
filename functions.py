@@ -22,7 +22,8 @@ logger = logging.getLogger("app.func")
 
 
 @retry(stop=stop_after_attempt(2), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=lambda retry_state: logger.exception("sendMixin() Failed."))
+        before_sleep=before_sleep_log(logger, logging.ERROR),
+        retry_error_callback=lambda retry_state: logger.error("sendMixin() Failed."))
 def sendMixin(msg, _type="PLAIN_TEXT"):
     token = MIXIN_TOKEN
     url = f"https://webhook.exinwork.com/api/send?access_token={token}"
@@ -72,18 +73,6 @@ def sendReport(exchange, symbolMarkets, interval=REPORT_INTERVAL):
                 msg += f"    {k}: {v}\n"
 
         sendMixin(f"{'=='*3}持仓报告{'=='*3}\n\n{msg}")
-    
-
-def retryCallback(retry_state):
-    name = getattr(retry_state.fn, '__name__')
-    retryTimes = retry_state.attempt_number
-    paras = retry_state.args
-    errorStr = retry_state.outcome
-    msg = f"失败退出:\n{name}()重试{retryTimes}次无效，币种线程退出。请检查。\n传入参数：{paras}\n报错信息：\n{errorStr}"
-    msg = colored(msg, "red")
-    sendAndPrintError(msg)
-    logger.exception(msg)
-    retry_state.outcome.result()
 
 
 def secondsToNext(exchange, level):
@@ -126,14 +115,14 @@ def nextStartTime(level, ahead_seconds=3):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def getSymbolMarket(exchange, symbol):
     mks = exchange.loadMarkets()
     return mks[symbol]
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def getKlines(exchange, symbol, level, amount):
     now = int(time.time() * 1000)
     levelMs = exchange.parseTimeframe(level.lower()) * 1000
@@ -166,14 +155,14 @@ def getKlines(exchange, symbol, level, amount):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def getAccount(exchange):
     account = exchange.fapiPrivateGetAccount()
     return account
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def getPosition(exchange, symbolMarket):
     position = exchange.fapiPrivateGetPositionRisk({
         "symbol": symbolMarket["id"]
@@ -182,7 +171,7 @@ def getPosition(exchange, symbolMarket):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def getBalance(exchange, quote="USDT"):
     return exchange.fetchBalance()["free"][quote.upper()]
 
@@ -198,7 +187,7 @@ def getMinNotional(exchange, symbolMarket):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def hasPosition(exchange, symbolMarket):
     symbolId = symbolMarket["id"]
     r = exchange.fapiPrivateGetPositionrisk({"symbol":symbolId})
@@ -210,7 +199,7 @@ def hasPosition(exchange, symbolMarket):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def getSymbolInfo(exchange, symbol, symbolMarket):
     # cols = [
     #     "账户权益", "账户收益", "账户余额",
@@ -300,7 +289,7 @@ def getSignal(symbolInfo, signalName, klines, paras):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def setMarginType(exchange, symbolId, _type=1):
     if _type==1:
         t = "CROSSED"
@@ -367,7 +356,7 @@ def getOrderSize(symbolInfo, symbolConfig, symbolMarket):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)
+        before_sleep=before_sleep_log(logger, logging.ERROR))
 def getOrderStatus(exchange, symbolId, orderId):
     return exchange.fapiPrivateGetOrder({
         "symbol": symbolId,
@@ -376,7 +365,7 @@ def getOrderStatus(exchange, symbolId, orderId):
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(SLEEP_SHORT), reraise=True,
-        retry_error_callback=retryCallback)                  
+        before_sleep=before_sleep_log(logger, logging.ERROR))                  
 def placeOrder(exchange, symbolInfo, symbolConfig, symbolMarket):
     symbol = symbolInfo.index[0]
     symbolId = symbolInfo.at[symbol, "交易对"]
@@ -412,7 +401,8 @@ def placeOrder(exchange, symbolInfo, symbolConfig, symbolMarket):
             orderId = orderInfo["orderId"]
         except Exception as e:
             logger.exception(e)
-            sendAndRaise(f"报错订单信息：{p}\n报错信息：{format_exc()}")
+            sendAndPrintError(f"报错订单信息：{p}\n报错信息：{format_exc()}")
+            continue
 
         time.sleep(SLEEP_SHORT)
                 
