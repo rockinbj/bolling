@@ -1,4 +1,5 @@
-import logging, logging.handlers
+import logging
+from concurrent_log_handler import ConcurrentRotatingFileHandler
 import os
 
 from paraConfig import LOG_FILE_LEVEL, LOG_CONSOLE_LEVEL
@@ -22,7 +23,7 @@ hdlConsole.setLevel(LOG_CONSOLE_LEVEL)
 hdlConsole.setFormatter(fmt)
 
 # 定义文件输出handler
-hdlFile = logging.handlers.TimedRotatingFileHandler(logFile, when="midnight", backupCount=30, encoding="utf8")
+hdlFile = ConcurrentRotatingFileHandler(logFile, maxBytes=1024*1024*10, backupCount=30, encoding="utf-8")
 hdlFile.setLevel(LOG_FILE_LEVEL)
 hdlFile.setFormatter(fmt)
 
