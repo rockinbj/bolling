@@ -1,3 +1,6 @@
+# 策略名称
+STRATEGY_NAME = "鹰"
+
 EXCHANGE = "BINANCE"
 
 # 最大重试次数

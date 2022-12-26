@@ -66,13 +66,15 @@ def sendReport(exchange, symbolMarkets, interval=REPORT_INTERVAL):
         
         symbolInfoList.fillna("-", inplace=True)
         siDict = symbolInfoList.to_dict(orient="index")
-        msg = ""
-        for symbol in siDict.keys():
-            msg += f"{symbol}:\n"
-            for k,v in siDict[symbol].items():
-                msg += f"    {k}: {v}\n"
 
-        sendMixin(f"{'=='*3}持仓报告{'=='*3}\n\n{msg}")
+        msg = f"### {STRATEGY_NAME} - 策略报告\n\n"
+
+        for symbol in siDict.keys():
+            msg += f"#### {symbol}\n"
+            for k,v in siDict[symbol].items():
+                msg += f" - {k}: {v}\n"
+
+        sendMixin(msg, _type="PLAIN_POST")
 
 
 def secondsToNext(exchange, level):
